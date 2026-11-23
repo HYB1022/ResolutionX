@@ -44,7 +44,7 @@ class MainActivity : Activity() {
 
     private var physical: Display? = null
 
-    private val binderListener = Shizuku.OnBinderReceivedListener { runOnUiThread { refreshAll() } }
+    private val binderListener = Shizuku.OnBinderReceivedListener { runOnUiThread { refreshAll(); reconnectService() } }
     private val deadListener = Shizuku.OnBinderDeadListener { runOnUiThread { refreshStatus() } }
     private val permListener = Shizuku.OnRequestPermissionResultListener { _, _ -> runOnUiThread { refreshAll() } }
 
@@ -121,6 +121,14 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshAll()
+        reconnectService()
+    }
+
+    /** 강제 종료로 서비스가 끊겼으면 자동으로 다시 붙인다 */
+    private fun reconnectService() {
+        if (GameWatcherService.needsReconnect(this) && Shell.hasPermission()) {
+            bg { GameWatcherService.ensureRunning(this).also { Thread.sleep(800) } }
+        }
     }
 
     override fun onDestroy() {
@@ -164,9 +172,15 @@ class MainActivity : Activity() {
         btnShizuku.text = if (!alive) "Shizuku 열기" else "권한 요청"
         btnShizuku.isEnabled = !granted
 
-        val a11y = GameWatcherService.isEnabled(this)
-        tvA11y.text = if (a11y) "자동 전환 서비스: 켜짐 ✓" else "자동 전환 서비스: 꺼짐"
-        btnA11y.isEnabled = !a11y
+        val running = GameWatcherService.running
+        val enabled = GameWatcherService.isEnabled(this) || prefs.serviceWanted
+        tvA11y.text = when {
+            running -> "자동 전환 서비스: 켜짐 ✓"
+            enabled -> "자동 전환 서비스: 멈춤 (앱이 강제 종료됨)"
+            else -> "자동 전환 서비스: 꺼짐"
+        }
+        btnA11y.text = if (enabled && !running) "다시 켜기" else "켜기"
+        btnA11y.isEnabled = !running
     }
 
     private fun updateScaleLabel() {
@@ -198,7 +212,7 @@ class MainActivity : Activity() {
 
     private fun enableAccessibility() {
         if (Shell.hasPermission()) {
-            bg { GameWatcherService.enableViaShell(this) }
+            bg { GameWatcherService.enableViaShell(this).also { Thread.sleep(800) } }
         } else {
             toast("설정 > 접근성에서 ResolutionX를 켜 주세요")
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))

@@ -66,9 +66,27 @@ class GameWatcherService : AccessibilityService() {
 
     private fun log(msg: String) { if (msg.isNotBlank()) Log.i(TAG, msg) }
 
+    /** 서비스가 (프로세스 종료 후) 다시 붙었을 때: 게임 밖인데 해상도가 낮게 남아 있으면 복구 */
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        running = true
+        Prefs(this).serviceWanted = true
+        worker.execute {
+            if (!Shell.awaitReady(5000)) return@execute
+            val prefs = Prefs(this)
+            val state = Resolution.readState() ?: return@execute
+            if (state.override == null) { prefs.appliedScreen = null; return@execute }
+            if (prefs.appliedScreen == null) return@execute // 사용자가 직접 바꾼 해상도는 건드리지 않음
+            val top = Resolution.foregroundPackage()
+            lastPkg = top
+            if (top != null && top !in prefs.games) log("재연결: " + Actions.exitGame(this))
+        }
+    }
+
     override fun onInterrupt() {}
 
     override fun onDestroy() {
+        running = false
         main.removeCallbacks(restoreTask)
         worker.shutdown()
         super.onDestroy()
@@ -78,7 +96,22 @@ class GameWatcherService : AccessibilityService() {
         private const val TAG = "ResolutionX"
         private const val RESTORE_DELAY_MS = 3000L
 
+        /** 서비스가 이 프로세스에서 실제로 바인드되어 돌고 있는지 */
+        @Volatile var running = false
+            private set
+
         fun component(ctx: Context) = ComponentName(ctx, GameWatcherService::class.java)
+
+        /**
+         * 사용자가 켜 두었는데 앱 강제 종료로 서비스가 끊긴 경우(시스템이 활성 목록에서도 제거함),
+         * Shizuku로 다시 등록한다. 백그라운드 스레드에서 호출.
+         */
+        fun needsReconnect(ctx: Context) = !running && Prefs(ctx).let { it.serviceWanted && it.autoSwitch }
+
+        fun ensureRunning(ctx: Context): String {
+            if (!needsReconnect(ctx) || !Shell.hasPermission()) return ""
+            return "자동 전환 서비스 재연결: " + enableViaShell(ctx)
+        }
 
         fun isEnabled(ctx: Context): Boolean {
             val list = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
@@ -89,10 +122,20 @@ class GameWatcherService : AccessibilityService() {
         /** Shizuku로 접근성 서비스를 켠다 (사이드로드 앱의 '제한된 설정' 우회). */
         fun enableViaShell(ctx: Context): String {
             val me = component(ctx).flattenToString()
-            val cur = Shell.run("settings get secure enabled_accessibility_services").out
+            val others = Shell.run("settings get secure enabled_accessibility_services").out
                 .takeUnless { it.isBlank() || it == "null" }
-            val next = if (cur == null) me else if (cur.split(':').contains(me)) cur else "$cur:$me"
-            val r = Shell.run("settings put secure enabled_accessibility_services '$next' && settings put secure accessibility_enabled 1")
+                ?.split(':')?.filter { it.isNotBlank() && it != me }.orEmpty()
+            val without = others.joinToString(":")
+            val with = (others + me).joinToString(":")
+            // 이미 등록돼 있어도 한 번 뺐다 넣어야 강제 종료 후 다시 바인드된다
+            val r = Shell.run(
+                (if (without.isEmpty()) "settings delete secure enabled_accessibility_services"
+                 else "settings put secure enabled_accessibility_services '$without'") +
+                    " && sleep 0.3 && settings put secure enabled_accessibility_services '$with'" +
+                    " && settings put secure accessibility_enabled 1"
+            )
+            // 배터리 최적화 예외: 시스템이 백그라운드에서 강제 종료할 가능성을 줄인다
+            Shell.run("cmd deviceidle whitelist +${ctx.packageName}")
             return if (r.ok) "자동 전환(접근성 서비스) 켜짐" else "접근성 서비스 켜기 실패: $r"
         }
     }

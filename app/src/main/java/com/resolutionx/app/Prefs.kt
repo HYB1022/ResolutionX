@@ -44,6 +44,11 @@ class Prefs(ctx: Context) {
         get() = sp.getStringSet("downscaledGames", null)?.toSet() ?: emptySet()
         set(v) = sp.edit().putStringSet("downscaledGames", v).apply()
 
+    /** 사용자가 자동 전환 서비스를 켜 두었는지 (강제 종료 시 시스템이 목록에서 빼버리므로 따로 기억) */
+    var serviceWanted: Boolean
+        get() = sp.getBoolean("serviceWanted", false)
+        set(v) = sp.edit().putBoolean("serviceWanted", v).apply()
+
     var physical: String?
         get() = sp.getString("physical", null)
         set(v) = sp.edit().putString("physical", v).apply()

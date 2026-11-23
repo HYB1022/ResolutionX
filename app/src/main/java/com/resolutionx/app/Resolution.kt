@@ -62,13 +62,57 @@ object Resolution {
         val p = Prefs(ctx)
         val phys = physical(ctx) ?: return "물리 해상도를 읽지 못했습니다 (Shizuku 확인)"
         val target = phys.scaled(pct)
-        if (p.appliedScreen == target.encode()) return "이미 적용됨: $target"
+        // 저장값이 아니라 실제 상태로 판단 (워치독이 대신 복구했을 수 있음)
+        if (readState()?.override == target) {
+            p.appliedScreen = target.encode()
+            startWatchdog(p.games)
+            return "이미 적용됨: $target"
+        }
         val r = Shell.run("wm size ${target.sizeText} && wm density ${target.dpi}")
         return if (r.ok) {
             p.appliedScreen = target.encode()
+            startWatchdog(p.games)
             "화면 해상도 적용: $target"
         } else "화면 해상도 적용 실패: $r"
     }
+
+    private const val WATCHDOG = "/data/local/tmp/resolutionx_watchdog.sh"
+
+    /**
+     * 셸(Shizuku) 쪽에서 앱과 독립적으로 도는 감시 스크립트.
+     * 앱 프로세스가 죽은 상태에서 게임을 벗어나면 해상도를 복구하고 종료한다.
+     * 앱이 살아 있으면 pidof만 확인하므로 부하가 거의 없다.
+     */
+    private fun startWatchdog(games: Set<String>) {
+        val script = """
+            PIDF=/data/local/tmp/resolutionx_watchdog.pid
+            [ -f ${'$'}PIDF ] && kill ${'$'}(cat ${'$'}PIDF) 2>/dev/null
+            echo ${'$'}${'$'} > ${'$'}PIDF
+            GAMES=" ${'$'}1 "
+            miss=0
+            while :; do
+              sleep 2
+              wm size | grep -q Override || break
+              if pidof ${BuildConfig.APPLICATION_ID} >/dev/null; then miss=0; continue; fi
+              top=${'$'}(dumpsys activity activities 2>/dev/null | grep -m1 topResumedActivity | sed -E 's/.* u0 ([^ /]+).*/\1/')
+              [ -z "${'$'}top" ] && continue
+              case "${'$'}GAMES" in *" ${'$'}top "*) miss=0 ;; *) miss=${'$'}((miss+1)) ;; esac
+              if [ ${'$'}miss -ge 2 ]; then wm size reset; wm density reset; break; fi
+            done
+            rm -f ${'$'}PIDF
+        """.trimIndent()
+        val pkgs = games.joinToString(" ")
+        Shell.run(
+            "cat > $WATCHDOG <<'RXEOF'\n$script\nRXEOF\n" +
+                "setsid sh $WATCHDOG '$pkgs' </dev/null >/dev/null 2>&1 &"
+        )
+    }
+
+    /** 현재 포그라운드 앱 패키지 (Shizuku 필요) */
+    fun foregroundPackage(): String? =
+        Regex(""" u0 ([^ /]+)/""").find(
+            Shell.run("dumpsys activity activities | grep -m1 topResumedActivity").out
+        )?.groupValues?.get(1)
 
     fun resetScreen(ctx: Context): String {
         val r = Shell.run("wm size reset && wm density reset")
