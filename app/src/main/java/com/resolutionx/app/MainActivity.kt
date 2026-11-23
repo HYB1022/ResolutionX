@@ -14,6 +14,7 @@ import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
+import android.view.WindowInsets
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.*
 import rikka.shizuku.Shizuku
@@ -51,6 +52,13 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         prefs = Prefs(this)
+
+        // Android 15+ edge-to-edge: 상태바·내비게이션바·카메라 컷아웃만큼 여백
+        findViewById<android.view.View>(R.id.root).setOnApplyWindowInsetsListener { v, insets ->
+            val b = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            v.setPadding(b.left, b.top, b.right, b.bottom)
+            insets
+        }
 
         tvShizuku = findViewById(R.id.tvShizuku)
         btnShizuku = findViewById(R.id.btnShizuku)
