@@ -47,7 +47,7 @@ Lenovo Legion Y700용 게임 해상도 최적화 앱 (Android, Shizuku 기반)
 - [x] 툴 구현 방식 결정 (Android 앱 + Shizuku)
 - [x] 앱 구현 및 빌드
 - [x] 실기기에서 `cmd game` 다운스케일 동작 확인 (Android 16)
-- [ ] 실기기에서 화면 해상도 자동 적용/복구 테스트
+- [x] 실기기에서 화면 해상도 자동 적용/복구 테스트 (ZUI 런처 감지 위해 QUERY_ALL_PACKAGES 필요)
 - [ ] 게임 실행 중 해상도 변경 시 명조 화면이 정상인지 확인
 - [ ] 다운스케일이 실제 렌더 해상도에 반영되는지 확인 (SurfaceFlinger)
 - [ ] 다운스케일 vs 화면 축소 실제 fps·발열 비교

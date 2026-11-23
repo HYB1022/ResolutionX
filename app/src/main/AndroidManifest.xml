@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 포그라운드 앱 전환 감지: 홈 런처 등 아이콘 없는 앱의 액티비티도 조회해야 한다 (사이드로드 전용 앱) -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:ignore="QueryAllPackagesPermission" />
+
     <!-- 설치된 게임 목록(런처 앱)을 보여주기 위해 필요 -->
     <queries>
         <intent>

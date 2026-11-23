@@ -28,9 +28,10 @@ class GameWatcherService : AccessibilityService() {
         val pkg = e.packageName?.toString() ?: return
         val cls = e.className?.toString() ?: return
         // 팝업/토스트/키보드 등은 무시하고 실제 액티비티 전환만 본다
-        if (!isActivity(pkg, cls)) return
+        if (!isActivity(pkg, cls)) { Log.d(TAG, "skip non-activity $pkg/$cls"); return }
         if (pkg == lastPkg) return
         lastPkg = pkg
+        Log.i(TAG, "foreground: $pkg/$cls")
 
         val prefs = Prefs(this)
         if (!prefs.autoSwitch) return
@@ -47,7 +48,7 @@ class GameWatcherService : AccessibilityService() {
 
     private fun maybeRestore() {
         val prefs = Prefs(this)
-        if (gameStillVisible(prefs.games)) return
+        if (gameStillVisible(prefs.games)) { Log.i(TAG, "game window still visible, keep"); return }
         worker.execute { log(Actions.exitGame(this)) }
     }
 
