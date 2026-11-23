@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ResolutionX</string>
+    <string name="a11y_desc">대상 게임이 실행되면 해상도를 낮추고, 게임을 벗어나면 원래 해상도로 되돌립니다. 화면 내용은 읽거나 저장하지 않습니다.</string>
+    <string name="wuwa_tips">• 리소스 등급: 고화질\n• 그래픽 품질 미리 설정: 제일 높게, 해상도: 낮음 (필요하면 중간)\n• 프레임 45 + 프레임 보간 ON → 90fps\n   (발열·배터리 감수 시 60 + 보간 → 120fps)\n• 특수효과 품질: 중간, 그림자: 중간\n• 그래픽 품질: 매우 높음\n• 자동 조정 빼고 모두 켜기\n• 식재 밀도: 낮음, 이방성 샘플: 8×\n• 불칸 ON, 프레임 보간 ON\n• 기기 모드: 밸런스</string>
+</resources>

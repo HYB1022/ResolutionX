@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxWidth="720dp"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- 상태 -->
+        <TextView style="@style/SectionTitle" android:text="상태" />
+
+        <LinearLayout style="@style/Row">
+            <TextView android:id="@+id/tvShizuku" style="@style/RowText" />
+            <Button android:id="@+id/btnShizuku" style="@style/SmallButton" android:text="권한 요청" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/Row">
+            <TextView android:id="@+id/tvA11y" style="@style/RowText" />
+            <Button android:id="@+id/btnA11y" style="@style/SmallButton" android:text="켜기" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/tvDisplay" style="@style/Body" />
+
+        <!-- 화면 해상도 -->
+        <TextView style="@style/SectionTitle" android:text="화면 전체 해상도 낮추기" />
+        <Switch
+            android:id="@+id/swScreen"
+            style="@style/Body"
+            android:text="사용 (wm size / density, 레터박스 없음)" />
+        <TextView android:id="@+id/tvScale" style="@style/Body" />
+        <SeekBar
+            android:id="@+id/sbScale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="50"
+            android:paddingVertical="8dp" />
+        <Button
+            android:id="@+id/btnRecommended"
+            style="@style/SmallButton"
+            android:text="권장값 (긴 변 2300px)" />
+
+        <!-- 다운스케일 -->
+        <TextView style="@style/SectionTitle" android:text="게임별 다운스케일 (Game Mode)" />
+        <Switch
+            android:id="@+id/swDownscale"
+            style="@style/Body"
+            android:text="사용 (Android 13+, 해당 게임만 렌더 해상도 축소)" />
+        <TextView android:id="@+id/tvDownscale" style="@style/Body" />
+        <SeekBar
+            android:id="@+id/sbDownscale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="12"
+            android:paddingVertical="8dp" />
+        <TextView
+            style="@style/Hint"
+            android:text="기기·게임에 따라 지원되지 않을 수 있습니다. 적용 후 게임을 완전히 종료했다가 다시 실행해야 반영됩니다." />
+
+        <!-- 게임 -->
+        <LinearLayout style="@style/Row" android:layout_marginTop="16dp">
+            <TextView style="@style/SectionTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_marginTop="0dp" android:text="대상 게임" />
+            <Button android:id="@+id/btnAddGame" style="@style/SmallButton" android:text="게임 선택" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/gamesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Switch
+            android:id="@+id/swAuto"
+            style="@style/Body"
+            android:layout_marginTop="8dp"
+            android:text="게임 진입 시 자동 적용, 나가면 자동 복구" />
+
+        <LinearLayout style="@style/Row" android:layout_marginTop="12dp">
+            <Button
+                android:id="@+id/btnApply"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="지금 적용" />
+            <Button
+                android:id="@+id/btnReset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="원래대로 복구" />
+        </LinearLayout>
+
+        <!-- 추천 설정 -->
+        <TextView style="@style/SectionTitle" android:text="명조 추천 그래픽 설정 (화면 해상도 축소 사용 시)" />
+        <TextView style="@style/Body" android:text="@string/wuwa_tips" />
+
+        <TextView style="@style/SectionTitle" android:text="로그" />
+        <TextView
+            android:id="@+id/tvLog"
+            style="@style/Hint"
+            android:fontFamily="monospace"
+            android:textIsSelectable="true" />
+    </LinearLayout>
+</ScrollView>
