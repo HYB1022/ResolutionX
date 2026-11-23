@@ -25,8 +25,11 @@ data class Display(val w: Int, val h: Int, val dpi: Int) {
 /** 실제 해상도 변경 로직. 모두 백그라운드 스레드에서 호출할 것. */
 object Resolution {
 
-    /** 참고 글 권장값: 3K(3040) → 약 2300 */
-    const val RECOMMENDED_LONG_SIDE = 2300
+    /**
+     * Y700 5세대 실측(명조, 같은 장면): 100% 63fps / 76% 105fps / 70% 119fps / 65% 119fps.
+     * 120fps를 유지하는 가장 높은 해상도인 70%(3040 → 2128)를 권장값으로 한다.
+     */
+    const val RECOMMENDED_LONG_SIDE = 2128
 
     data class State(val physical: Display, val override: Display?)
 
