@@ -71,7 +71,9 @@ object Resolution {
             startWatchdog(p.games)
             return "이미 적용됨: $target"
         }
-        val r = Shell.run("wm size ${target.sizeText} && wm density ${target.dpi}")
+        // DPI를 먼저 바꿔야 한다. 크기부터 줄이면 잠깐 '작은 화면 + 높은 DPI'(폰 크기) 상태가 되어
+        // ZUI 런처가 태스크바를 없애고, 이후 DPI가 바뀌어도 다시 만들지 않는다.
+        val r = Shell.run("wm density ${target.dpi} && wm size ${target.sizeText}")
         return if (r.ok) {
             p.appliedScreen = target.encode()
             startWatchdog(p.games)
