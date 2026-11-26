@@ -237,7 +237,9 @@ class MainActivity : Activity() {
 
     // ---------- 게임 목록 ----------
 
-    private data class AppEntry(val pkg: String, val label: String, val isGame: Boolean)
+    private data class AppEntry(val pkg: String, val label: String, val isGame: Boolean) {
+        val isRemote get() = RemoteApps.isRemote(pkg, label)
+    }
 
     private fun launchableApps(): List<AppEntry> {
         val pm = packageManager
@@ -253,7 +255,9 @@ class MainActivity : Activity() {
     private fun pickGames() {
         val apps = launchableApps()
         val selected = prefs.games.toMutableSet()
-        val labels = apps.map { (if (it.isGame) "🎮 " else "") + it.label }.toTypedArray()
+        val labels = apps.map {
+            (if (it.isGame) "🎮 " else "") + it.label + (if (it.isRemote) " ⚠ 원격 앱" else "")
+        }.toTypedArray()
         val checked = apps.map { it.pkg in selected }.toBooleanArray()
         AlertDialog.Builder(this)
             .setTitle("해상도를 낮출 게임 선택")
@@ -261,12 +265,37 @@ class MainActivity : Activity() {
                 if (on) selected += apps[i].pkg else selected -= apps[i].pkg
             }
             .setPositiveButton("확인") { _, _ ->
-                val removed = prefs.games - selected
-                prefs.games = selected
-                removed.filter { it in prefs.downscaledGames }.forEach { pkg -> bg { Resolution.resetDownscale(this, pkg) } }
-                renderGames()
+                // 새로 추가한 원격 앱만 경고한다 (이미 경고를 보고 남겨 둔 앱은 다시 묻지 않음).
+                val newRemote = apps.filter { it.isRemote && it.pkg in selected && it.pkg !in prefs.games }
+                if (newRemote.isEmpty()) saveGames(selected)
+                else warnRemote(newRemote.map { it.label }) { keep ->
+                    saveGames(if (keep) selected else selected - newRemote.map { it.pkg }.toSet())
+                }
             }
             .setNegativeButton("취소", null)
+            .show()
+    }
+
+    private fun saveGames(selected: Set<String>) {
+        val removed = prefs.games - selected
+        prefs.games = selected
+        removed.filter { it in prefs.downscaledGames }.forEach { pkg -> bg { Resolution.resetDownscale(this, pkg) } }
+        renderGames()
+    }
+
+    private fun warnRemote(labels: List<String>, onChoice: (keep: Boolean) -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle("원격 스트리밍 앱은 권장하지 않습니다")
+            .setMessage(
+                "${labels.joinToString(", ")}은(는) 원격 스트리밍 앱입니다.\n\n" +
+                    "• 스트리밍 중에 해상도가 바뀌면 소리와 입력은 되는데 화면만 멈출 수 있습니다.\n" +
+                    "• Apollo 같은 호스트는 태블릿 해상도에 맞춰 PC 가상 디스플레이를 만듭니다. " +
+                    "낮춘 해상도로 접속하면 PC 게임이 그 해상도를 저장해서, 나중에 원래 해상도로 접속해도 화면이 멈출 수 있습니다.\n\n" +
+                    "스트리밍 해상도는 원격 앱 설정에서 바꾸는 것을 권장합니다."
+            )
+            .setPositiveButton("빼고 저장") { _, _ -> onChoice(false) }
+            .setNegativeButton("그래도 추가") { _, _ -> onChoice(true) }
+            .setCancelable(false)
             .show()
     }
 
@@ -293,8 +322,10 @@ class MainActivity : Activity() {
                 info?.let { setImageDrawable(it.loadIcon(pm)) }
                 layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) }
             })
+            val label = info?.loadLabel(pm)?.toString()
             row.addView(TextView(this).apply {
-                text = info?.loadLabel(pm)?.toString() ?: "$pkg (설치 안 됨)"
+                text = (label ?: "$pkg (설치 안 됨)") +
+                    if (RemoteApps.isRemote(pkg, label)) "\n⚠ 원격 앱: 스트리밍 화면이 멈출 수 있음" else ""
                 textSize = 15f
                 layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
             })
